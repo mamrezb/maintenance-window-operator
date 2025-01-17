@@ -1,0 +1,9 @@
+apiVersion: maintenance.mamrezb.com/v1alpha1
+kind: ServiceChecker
+metadata:
+  labels:
+    app.kubernetes.io/name: maintenance-window-manager
+    app.kubernetes.io/managed-by: kustomize
+  name: servicechecker-sample
+spec:
+  # TODO(user): Add fields here

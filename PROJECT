@@ -7,4 +7,14 @@ layout:
 - go.kubebuilder.io/v4
 projectName: maintenance-window-manager
 repo: github.com/mamrezb/maintenance-window-manager
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: mamrezb.com
+  group: maintenance
+  kind: ServiceChecker
+  path: github.com/mamrezb/maintenance-window-manager/api/v1alpha1
+  version: v1alpha1
 version: "3"
