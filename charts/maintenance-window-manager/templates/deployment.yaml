@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # Use nameOverride if set, else default to "maintenance-window-manager"
+  name: {{ .Values.nameOverride | default "maintenance-window-manager" }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.nameOverride | default "maintenance-window-manager" }}
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    app.kubernetes.io/instance: "{{ .Release.Name }}"
+    app.kubernetes.io/version: "{{ .Chart.AppVersion }}"
+    app.kubernetes.io/managed-by: "{{ .Release.Service }}"
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.nameOverride | default "maintenance-window-manager" }}
+      app.kubernetes.io/instance: "{{ .Release.Name }}"
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.nameOverride | default "maintenance-window-manager" }}
+        app.kubernetes.io/instance: "{{ .Release.Name }}"
+      annotations:
+{{- if .Values.podAnnotations }}
+{{ toYaml .Values.podAnnotations | nindent 8 }}
+{{- else }}
+        {}
+{{- end }}
+    spec:
+      serviceAccountName: {{ if and .Values.serviceAccount.create .Values.serviceAccount.name }}
+        {{ .Values.serviceAccount.name }}
+      {{ else if .Values.serviceAccount.create }}
+        {{ .Values.nameOverride | default "maintenance-window-manager" }}
+      {{ else }}
+        default
+      {{ end }}
+      containers:
+      - name: operator
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        resources:
+{{ toYaml .Values.resources | nindent 10 }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | nindent 8 }}
+      tolerations:
+{{ toYaml .Values.tolerations | nindent 8 }}
+      affinity:
+{{ toYaml .Values.affinity | nindent 8 }}

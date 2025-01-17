@@ -1,0 +1,32 @@
+# Set this to override the operator's name in the manifests
+nameOverride: ""
+
+# Operator image
+image:
+  repository: "hub.docker.com/mamrezb/maintenance-window-manager"
+  tag: "latest"
+  pullPolicy: "IfNotPresent"
+
+# Number of replicas
+replicaCount: 1
+
+serviceAccount:
+  create: true
+  # if non-empty, will name the SA exactly this
+  name: ""
+
+rbac:
+  create: true
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

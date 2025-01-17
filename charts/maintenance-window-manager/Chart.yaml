@@ -1,0 +1,6 @@
+apiVersion: v2
+name: maintenance-window-manager
+description: Minimal Helm chart for the Maintenance Window Manager operator
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
