@@ -68,6 +68,8 @@ spec:
                       type: string
                     ready:
                       type: boolean
+                  required:
+                  - ready
                   type: object
                 type: array
             type: object

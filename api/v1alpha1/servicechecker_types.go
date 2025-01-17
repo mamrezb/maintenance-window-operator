@@ -49,7 +49,7 @@ type ServiceCheckerStatus struct {
 type ServiceStatus struct {
 	Name      string `json:"name,omitempty"`
 	Namespace string `json:"namespace,omitempty"`
-	Ready     bool   `json:"ready,omitempty"`
+	Ready     bool   `json:"ready"`
 }
 
 // +kubebuilder:object:root=true
