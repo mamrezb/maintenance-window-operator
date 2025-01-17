@@ -19,10 +19,15 @@ package controller
 import (
 	"context"
 
+	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	maintenancev1alpha1 "github.com/mamrezb/maintenance-window-manager/api/v1alpha1"
 )
@@ -47,17 +52,120 @@ type ServiceCheckerReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.4/pkg/reconcile
 func (r *ServiceCheckerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	// 1. Fetch the ServiceChecker instance
+	sc := &maintenancev1alpha1.ServiceChecker{}
+	if err := r.Get(ctx, req.NamespacedName, sc); err != nil {
+		if k8serrors.IsNotFound(err) {
+			// The object might be deleted
+			logger.Info("ServiceChecker resource not found. Ignoring since object must be deleted.")
+			return reconcile.Result{}, nil
+		}
+		logger.Error(err, "Failed to get ServiceChecker")
+		return reconcile.Result{}, err
+	}
+
+	logger.Info("Reconciling ServiceChecker", "name", sc.Name, "namespace", sc.Namespace)
+
+	// 2. Build a new status based on the actual Endpoints we find
+	var newStatuses []maintenancev1alpha1.ServiceStatus
+	for _, svcRef := range sc.Spec.Services {
+		svcReady := false
+
+		// We'll check the Endpoints for that service
+		endpointsObj := &corev1.Endpoints{}
+		err := r.Get(ctx, types.NamespacedName{
+			Name:      svcRef.Name,
+			Namespace: svcRef.Namespace,
+		}, endpointsObj)
+		if err != nil {
+			if k8serrors.IsNotFound(err) {
+				logger.Info("Endpoints not found", "svc", svcRef.Name, "ns", svcRef.Namespace)
+			} else {
+				logger.Error(err, "Error getting Endpoints", "svc", svcRef.Name, "ns", svcRef.Namespace)
+			}
+		} else {
+			// If any Subset has at least one address, we consider it "Ready"
+			for _, subset := range endpointsObj.Subsets {
+				if len(subset.Addresses) > 0 {
+					svcReady = true
+					break
+				}
+			}
+		}
+
+		newStatuses = append(newStatuses, maintenancev1alpha1.ServiceStatus{
+			Name:      svcRef.Name,
+			Namespace: svcRef.Namespace,
+			Ready:     svcReady,
+		})
+	}
+
+	// 3. Update the ServiceChecker status
+	sc.Status.ServiceStatuses = newStatuses
+	if err := r.Status().Update(ctx, sc); err != nil {
+		logger.Error(err, "Failed to update ServiceChecker status")
+		return ctrl.Result{}, err
+	}
+
+	logger.Info("Successfully updated status", "ServiceStatuses", newStatuses)
 
 	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ServiceCheckerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	// We watch:
+	//  - ServiceChecker objects
+	//  - Endpoints objects (so we see real-time changes)
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&maintenancev1alpha1.ServiceChecker{}).
-		Named("servicechecker").
+		Watches(
+			&corev1.Endpoints{},
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+				endpointsObj, ok := obj.(*corev1.Endpoints)
+				if !ok {
+					return nil
+				}
+				return r.findRelatedServiceCheckers(ctx, endpointsObj)
+			}),
+		).
 		Complete(r)
+}
+
+// findRelatedServiceCheckers scans all ServiceChecker CRs to see if they reference the Endpoints
+func (r *ServiceCheckerReconciler) findRelatedServiceCheckers(ctx context.Context, endpointsObj *corev1.Endpoints) []reconcile.Request {
+	logger := log.FromContext(ctx)
+
+	// e.g., myv1alpha1.ServiceCheckerList if your CR is named "ServiceChecker"
+	var scList maintenancev1alpha1.ServiceCheckerList
+	if err := r.List(ctx, &scList); err != nil {
+		logger.Error(err, "Failed to list ServiceCheckers")
+		return nil
+	}
+
+	var requests []reconcile.Request
+	for _, sc := range scList.Items {
+		for _, svcRef := range sc.Spec.Services {
+			if svcRef.Name == endpointsObj.Name && svcRef.Namespace == endpointsObj.Namespace {
+				req := reconcile.Request{
+					NamespacedName: types.NamespacedName{
+						Name:      sc.Name,
+						Namespace: sc.Namespace,
+					},
+				}
+				requests = append(requests, req)
+				// We can break if no need to check multiple matches
+				break
+			}
+		}
+	}
+
+	if len(requests) > 0 {
+		logger.Info("Endpoints changed -> Reconcile ServiceChecker(s)",
+			"endpoints", endpointsObj.Name, "namespace", endpointsObj.Namespace,
+			"count", len(requests))
+	}
+	return requests
 }

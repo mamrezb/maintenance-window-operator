@@ -28,14 +28,28 @@ type ServiceCheckerSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of ServiceChecker. Edit servicechecker_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// List of services to check
+	Services []NamedService `json:"services,omitempty"`
+}
+
+// NamedService is a reference to a K8s Service
+type NamedService struct {
+	Name      string `json:"name,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
+	Critical  bool   `json:"critical,omitempty"`
 }
 
 // ServiceCheckerStatus defines the observed state of ServiceChecker.
 type ServiceCheckerStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	ServiceStatuses []ServiceStatus `json:"serviceStatuses,omitempty"`
+}
+
+type ServiceStatus struct {
+	Name      string `json:"name,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
+	Ready     bool   `json:"ready,omitempty"`
 }
 
 // +kubebuilder:object:root=true
