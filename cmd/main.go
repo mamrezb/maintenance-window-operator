@@ -26,6 +26,7 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	"github.com/mamrezb/maintenance-window-manager/internal/api"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -235,6 +236,16 @@ func main() {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
+
+	// Start the API server in a separate goroutine.
+	go func() {
+		// You can choose any port that does not conflict with your manager’s endpoints.
+		apiAddr := ":8082"
+		if err := api.StartHTTPServer(apiAddr, mgr.GetClient()); err != nil {
+			setupLog.Error(err, "unable to start HTTP API server")
+			os.Exit(1)
+		}
+	}()
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {

@@ -3,7 +3,7 @@ nameOverride: ""
 
 # Operator image
 image:
-  repository: "hub.docker.com/mamrezb/maintenance-window-manager"
+  repository: "mamrezb/maintenance-window-manager"
   tag: "latest"
   pullPolicy: "IfNotPresent"
 
@@ -30,3 +30,5 @@ podAnnotations: {}
 nodeSelector: {}
 tolerations: []
 affinity: {}
+
+apiPort: 8082

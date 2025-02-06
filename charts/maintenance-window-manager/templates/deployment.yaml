@@ -38,6 +38,22 @@ spec:
       - name: operator
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        # Pass arguments to the operator binary.
+        args:
+          - "--metrics-bind-address=:8443"
+          - "--health-probe-bind-address=:8081"
+          - "--leader-elect={{ .Values.leaderElection.enabled }}"
+          - "--api-bind-address=:{{ .Values.apiPort }}"
+        ports:
+          - name: metrics
+            containerPort: 8443
+            protocol: TCP
+          - name: health
+            containerPort: 8081
+            protocol: TCP
+          - name: api
+            containerPort: {{ .Values.apiPort }}
+            protocol: TCP
         resources:
 {{ toYaml .Values.resources | nindent 10 }}
       nodeSelector:
