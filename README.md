@@ -1,135 +1,145 @@
-# maintenance-window-manager
-// TODO(user): Add simple overview of use/purpose
+# Maintenance Window Manager
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+A Kubernetes operator that monitors critical service endpoints to automatically indicate when a service is under maintenance. Frontend applications can query its lightweight HTTP API to decide whether to switch into maintenance mode.
 
-## Getting Started
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Quickstart](#quickstart)
+- [Usage](#usage)
+- [Development](#development)
+- [Contributing](#contributing)
+- [Code of Conduct](#code-of-conduct)
+- [License](#license)
+
+---
+
+## Overview
+
+Maintenance Window Manager continuously watches the health of services (via their Endpoints) in your Kubernetes cluster. By updating a custom resource’s status, it enables applications to react—such as displaying a maintenance page when a critical backend is unavailable.
+
+---
+
+## Architecture
+
+Maintenance Window Manager is built using standard Kubernetes operator patterns:
+
+- **Custom Resource (ServiceChecker):**  
+  Declare the list of services to monitor, along with a flag indicating whether each is critical.
+
+- **Controller:**  
+  Watches for changes in both the ServiceChecker CRs and Kubernetes Endpoints. When a service’s state changes, the controller updates the CR’s status with a “ready” flag.
+
+- **HTTP API Server:**  
+  A built-in server exposes an endpoint (e.g. `/services`) that returns a JSON array of service statuses. This API lets clients quickly determine the availability of critical services.
+
+---
+
+## Quickstart
 
 ### Prerequisites
-- go version v1.23.0+
-- docker version 17.03+.
-- kubectl version v1.11.3+.
-- Access to a Kubernetes v1.11.3+ cluster.
 
-### To Deploy on the cluster
-**Build and push your image to the location specified by `IMG`:**
+- A running Kubernetes cluster (v1.20+ recommended)
+- [Helm 3](https://helm.sh/) installed
 
-```sh
-make docker-build docker-push IMG=<some-registry>/maintenance-window-manager:tag
+### Installation
+
+1. **Install CRDs:**
+
+   Ensure the Custom Resource Definitions are installed first:
+   ```bash
+   kubectl apply -k config/crd
+   ```
+
+2. **Deploy via Helm:**
+
+   Install the operator using the provided Helm chart:
+   ```bash
+   helm install maintenance-window-manager ./charts/maintenance-window-manager \
+     --namespace maintenance-window-manager-system --create-namespace
+   ```
+
+---
+
+## Usage
+
+Create a `ServiceChecker` resource to specify which services to monitor. For example:
+
+```yaml
+apiVersion: maintenance.mamrezb.com/v1alpha1
+kind: ServiceChecker
+metadata:
+  name: example-checker
+spec:
+  services:
+    - name: my-service
+      namespace: default
+      critical: true
 ```
 
-**NOTE:** This image ought to be published in the personal registry you specified.
-And it is required to have access to pull the image from the working environment.
-Make sure you have the proper permission to the registry if the above commands don’t work.
+Apply the resource:
 
-**Install the CRDs into the cluster:**
-
-```sh
-make install
+```bash
+kubectl apply -f example-servicechecker.yaml
 ```
 
-**Deploy the Manager to the cluster with the image specified by `IMG`:**
+Query the health status by accessing the HTTP API (adjust the service URL as needed):
 
-```sh
-make deploy IMG=<some-registry>/maintenance-window-manager:tag
+```bash
+curl -k https://<operator-service>.<namespace>.svc.cluster.local:8443/services
 ```
 
-> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
-privileges or be logged in as admin.
+A sample response might look like:
 
-**Create instances of your solution**
-You can apply the samples (examples) from the config/sample:
-
-```sh
-kubectl apply -k config/samples/
+```json
+[
+  {
+    "name": "my-service",
+    "namespace": "default",
+    "ready": true,
+    "critical": true
+  }
+]
 ```
 
->**NOTE**: Ensure that the samples has default values to test it out.
+---
 
-### To Uninstall
-**Delete the instances (CRs) from the cluster:**
+## Development
 
-```sh
-kubectl delete -k config/samples/
+To build and test the operator locally:
+
+```bash
+# Build the Docker image
+make docker-build
+
+# If using a Kind cluster, load the image
+make docker-load
+
+# Deploy the operator locally
+make deploy
+
+# Run tests
+make test
 ```
 
-**Delete the APIs(CRDs) from the cluster:**
-
-```sh
-make uninstall
-```
-
-**UnDeploy the controller from the cluster:**
-
-```sh
-make undeploy
-```
-
-## Project Distribution
-
-Following the options to release and provide this solution to the users.
-
-### By providing a bundle with all YAML files
-
-1. Build the installer for the image built and published in the registry:
-
-```sh
-make build-installer IMG=<some-registry>/maintenance-window-manager:tag
-```
-
-**NOTE:** The makefile target mentioned above generates an 'install.yaml'
-file in the dist directory. This file contains all the resources built
-with Kustomize, which are necessary to install this project without its
-dependencies.
-
-2. Using the installer
-
-Users can just run 'kubectl apply -f <URL for YAML BUNDLE>' to install
-the project, i.e.:
-
-```sh
-kubectl apply -f https://raw.githubusercontent.com/<org>/maintenance-window-manager/<tag or branch>/dist/install.yaml
-```
-
-### By providing a Helm Chart
-
-1. Build the chart using the optional helm plugin
-
-```sh
-kubebuilder edit --plugins=helm/v1-alpha
-```
-
-2. See that a chart was generated under 'dist/chart', and users
-can obtain this solution from there.
-
-**NOTE:** If you change the project, you need to update the Helm Chart
-using the same command above to sync the latest changes. Furthermore,
-if you create webhooks, you need to use the above command with
-the '--force' flag and manually ensure that any custom configuration
-previously added to 'dist/chart/values.yaml' or 'dist/chart/manager/manager.yaml'
-is manually re-applied afterwards.
+---
 
 ## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
 
-**NOTE:** Run `make help` for more information on all potential `make` targets
+Contributions are welcome. Please open GitHub issues or submit pull requests for bug fixes, improvements, or new features. Ensure that new code is covered by tests.
 
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
+---
+
+## Code of Conduct
+
+This project follows a **strict code of conduct** to ensure a positive environment.  
+Please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before contributing.
+
+---
 
 ## License
 
-Copyright 2025 mamrezb.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
+This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
