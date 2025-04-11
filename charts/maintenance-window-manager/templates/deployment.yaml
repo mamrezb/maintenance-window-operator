@@ -42,7 +42,7 @@ spec:
         args:
           - "--metrics-bind-address=:8443"
           - "--health-probe-bind-address=:8081"
-          - "--leader-elect={{ .Values.leaderElection.enabled }}"
+          - "--leader-elect={{ default false .Values.leaderElection }}"
           - "--api-bind-address=:{{ .Values.apiPort }}"
         ports:
           - name: metrics

@@ -69,7 +69,7 @@ func (r *ServiceCheckerReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	logger.Info("Reconciling ServiceChecker", "name", sc.Name, "namespace", sc.Namespace)
 
 	// 2. Build a new status based on the actual Endpoints we find
-	var newStatuses []maintenancev1alpha1.ServiceStatus
+	newStatuses := make([]maintenancev1alpha1.ServiceStatus, 0, len(sc.Spec.Services))
 	for _, svcRef := range sc.Spec.Services {
 		svcReady := false
 
@@ -145,7 +145,7 @@ func (r *ServiceCheckerReconciler) findRelatedServiceCheckers(ctx context.Contex
 		return nil
 	}
 
-	var requests []reconcile.Request
+	requests := make([]reconcile.Request, 0, len(scList.Items))
 	for _, sc := range scList.Items {
 		for _, svcRef := range sc.Spec.Services {
 			if svcRef.Name == endpointsObj.Name && svcRef.Namespace == endpointsObj.Namespace {

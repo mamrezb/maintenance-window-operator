@@ -32,3 +32,7 @@ tolerations: []
 affinity: {}
 
 apiPort: 8082
+
+# Enable leader election for controller manager.
+# Enabling this will ensure there is only one active controller manager.
+leaderElection: false
