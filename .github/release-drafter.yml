@@ -1,0 +1,56 @@
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+categories:
+  - title: '🚀 Features'
+    labels:
+      - 'feature'
+      - 'enhancement'
+  - title: '🐛 Bug Fixes'
+    labels:
+      - 'fix'
+      - 'bugfix'
+      - 'bug'
+  - title: '🧰 Maintenance'
+    labels:
+      - 'chore'
+      - 'documentation'
+      - 'dependencies'
+      - 'maintenance'
+
+change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
+
+version-resolver:
+  major:
+    labels:
+      - 'major'
+  minor:
+    labels:
+      - 'minor'
+  patch:
+    labels:
+      - 'patch'
+  default: patch
+
+template: |
+  ## Changes
+
+  $CHANGES
+
+  ## Docker Image
+  ```
+  ghcr.io/$OWNER/$REPOSITORY:v$RESOLVED_VERSION
+  ```
+
+  ## Installation
+  
+  ### Using Helm
+  ```bash
+  helm repo add maintenance-window-manager https://github.com/$OWNER/$REPOSITORY/releases/download/v$RESOLVED_VERSION
+  helm install maintenance-window-manager maintenance-window-manager/maintenance-window-manager
+  ```
+  
+  ### Using kubectl
+  ```bash
+  kubectl apply -f https://github.com/$OWNER/$REPOSITORY/releases/download/v$RESOLVED_VERSION/install.yaml
+  ``` 

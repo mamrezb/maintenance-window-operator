@@ -15,6 +15,7 @@ A Kubernetes operator that monitors critical service endpoints to automatically 
 - [Contributing](#contributing)
 - [Code of Conduct](#code-of-conduct)
 - [License](#license)
+- [Releases](#releases)
 
 ---
 
@@ -41,7 +42,7 @@ Maintenance Window Manager is built using standard Kubernetes operator patterns:
 
 ## Demo
 
-![Quick demo of maintenance-window-operator](docs/demo.gif)
+![Quick demo of maintenance-window-operator](docs/usage.gif)
 
 ---
 
@@ -67,6 +68,18 @@ Maintenance Window Manager is built using standard Kubernetes operator patterns:
    ```bash
    helm install maintenance-window-manager ./charts/maintenance-window-manager \
      --namespace maintenance-window-manager-system --create-namespace
+   ```
+
+3. **Deploy from GitHub Release:**
+
+   
+   ```bash
+   # Using kubectl
+   kubectl apply -f https://github.com/user/maintenance-window-manager/releases/latest/download/install.yaml
+   
+   # Using Helm
+   helm repo add maintenance-window-manager https://github.com/user/maintenance-window-manager/releases/latest
+   helm install maintenance-window-manager maintenance-window-manager/maintenance-window-manager
    ```
 
 ---
@@ -150,3 +163,32 @@ Please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before contributing.
 ## License
 
 This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
+
+---
+
+## Releases
+
+### Release Process
+
+This project follows [Semantic Versioning](https://semver.org/). Releases are available on GitHub and packaged as:
+
+- Container images (multi-architecture): `ghcr.io/user/maintenance-window-manager:v{version}`
+- Helm charts
+- Kubernetes manifests (install.yaml)
+
+### Creating a New Release
+
+For maintainers, to create a new release:
+
+1. Ensure all changes for the release are merged to main
+2. Use the "Draft Release Notes" GitHub Action to generate release notes
+3. Create and push a new tag following semver (e.g., `v0.1.0`):
+   ```bash
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
+4. The release workflow will automatically build and publish all artifacts
+
+### Latest Stable Release
+
+You can always find the latest release at: https://github.com/user/maintenance-window-manager/releases/latest
